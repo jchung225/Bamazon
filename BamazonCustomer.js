@@ -1,6 +1,5 @@
-var prompt = require('prompt');
-var mysql = require('mysql');
-var padText = require('./padTable.js')
+var prompt = require("prompt");
+var mysql = require("mysql");
 
 var connection = mysql.createConnection({
     host: "localhost",
@@ -28,13 +27,13 @@ connection.query('SELECT * FROM Products', function(err, res){
       itemID = padText("  ID  ", itemID);
   
       var productName = res[i].ProductName + ''; 
-      productName = padText("      Product Name      ", productName);
+      productName = padText("Product Name", productName);
   
       var departmentName = res[i].DepartmentName + ''; 
       departmentName = padText("  Department Name  ", departmentName);
   
       var price = '$' + res[i].Price.toFixed(2) + ''; 
-      price = padText("   Price  ", price);
+      price = padText("Price", price);
   
       var quantity = res[i].StockQuantity + ''; 
   
@@ -64,4 +63,43 @@ connection.query('SELECT * FROM Products', function(err, res){
             var bamazonQuantity = res[0].StockQuantity;
             if(bamazonQuantity >= buyItemQuantity){
   
-          
+              var newInventory = parseInt(bamazonQuantity) - parseInt(buyItemQuantity); 
+              connection.query('UPDATE Products SET ? WHERE ?', [{StockQuantity: newInventory}, {ItemID: buyItemID}], function(err, res){
+                if(err) throw err; 
+              }); 
+
+              var customerTotal;
+              connection.query('SELECT Price FROM Products WHERE ?', [{ItemID: buyItemID}], function(err, res){
+                
+                var buyItemPrice = res[0].Price;
+                customerTotal = buyItemQuantity*buyItemPrice.toFixed(2);
+  
+                console.log('\nYour total is $' + customerTotal + '.');
+  
+                connection.query('SELECT DepartmentName FROM Products WHERE ?', [{ItemID: buyItemID}], function(err, res){
+                  var itemDepartment = res[0].DepartmentName;
+            
+                  connection.query('SELECT TotalSales FROM Departments WHERE ?', [{DepartmentName: itemDepartment}], function(err, res){
+                    var totalSales = res[0].TotalSales;
+  
+                    var totalSales = parseFloat(totalSales) + parseFloat(customerTotal);
+  
+                    connection.query('UPDATE Departments SET ? WHERE ?', [{TotalSales: totalSales}, {DepartmentName: itemDepartment}], function(err, res){
+                      if(err) throw err;
+                      console.log('Transaction Completed. Thank you!')
+                      connection.end(); 
+  
+                    });
+                  });
+                });
+              }); 
+            } else{
+              console.log('Sorry... We only have ' +  bamazonQuantity + ' of those items. Order cancelled.');
+              connection.end(); 
+            }
+          }
+        }); 
+      });
+    }); 
+  }); 
+    
