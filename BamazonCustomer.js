@@ -42,4 +42,26 @@ connection.query('SELECT * FROM Products', function(err, res){
     }
     prompt.start();
   
-    
+    console.log('\nWhich item do you want to buy?');
+    prompt.get(['buyItemID'], function (err, result) {
+
+      var buyItemID = result.buyItemID;
+      console.log('You selected Item # ' + buyItemID + '.');
+  
+      console.log('\nHow many do you wish to buy?')
+      prompt.get(['buyItemQuantity'], function (err, result) {
+
+        var buyItemQuantity = result.buyItemQuantity;
+        console.log('You selected to buy ' + buyItemQuantity + ' of these.');
+  
+
+        connection.query('SELECT StockQuantity FROM Products WHERE ?', [{ItemID: buyItemID}], function(err, res){
+          if(err) throw err; 
+          if(res[0] == undefined){
+            console.log('Sorry... We found no items with Item ID "' +  buyItemID + '"');
+            connection.end(); 
+          } else{
+            var bamazonQuantity = res[0].StockQuantity;
+            if(bamazonQuantity >= buyItemQuantity){
+  
+          
